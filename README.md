@@ -1,4 +1,4 @@
-This is the repository for my personal website under development.
+This is the repository for my personal website.
 
 I'm building it with blogdown, Hugo and its Academic theme.
 
