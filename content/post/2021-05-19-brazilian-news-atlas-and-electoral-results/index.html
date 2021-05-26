@@ -22,7 +22,7 @@ projects: []
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from <em>Atlas da Notícia</em>, a survey of local journalistic vehicles, with data from local Brazilian elections, and generate insights about local electoral politics.</p>
+<p>This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from <em>Atlas da Notícia</em>, a survey of local journalistic vehicles, with data from local Brazilian elections.</p>
 <p><em>Atlas da Notícia</em> is an initiative from <a href="https://www.projor.org.br/">Projor</a> (Institute for Journalism Development) with <a href="https://voltdata.info/">Volt Data Lab</a>.</p>
 <p>We are interested in evaluate electoral outcomes from the so-called <em>news deserts</em>, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of total population.</p>
 <p>The theorethical implications in electoral politics from these <em>news deserts</em> are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process.</p>
@@ -126,9 +126,11 @@ atlas_enpv &lt;- fragmentacao |&gt;
 rm(atlas, cod_tse_ibge, colunas, fragmentacao, 
    resultados_2020, resultados_cand_2020, 
    resultados_partido_2020, nome_municipio)</code></pre>
-<p>The resulting data frame is:</p>
-<pre class="r"><code>head(atlas_enpv) |&gt; kable()</code></pre>
+<p>The resulting dataframe is:</p>
+<pre class="r"><code>head(atlas_enpv) |&gt; 
+  kable(caption = &quot;Dataframe head of joined info from Atlas da Notícia and electoral results&quot;)</code></pre>
 <table>
+<caption><span id="tab:unnamed-chunk-8">Table 1: </span>Dataframe head of joined info from Atlas da Notícia and electoral results</caption>
 <colgroup>
 <col width="6%" />
 <col width="5%" />
@@ -314,7 +316,7 @@ desertos &lt;- desertos |&gt;
          &quot;CumSum of %&quot; = cumsum) |&gt;
   kable(caption = &quot;Cumulated sum of % municipalities by district magnitude&quot;)</code></pre>
 <table>
-<caption><span id="tab:unnamed-chunk-13">Table 1: </span>Cumulated sum of % municipalities by district magnitude</caption>
+<caption><span id="tab:unnamed-chunk-13">Table 2: </span>Cumulated sum of % municipalities by district magnitude</caption>
 <thead>
 <tr class="header">
 <th align="right"># of Seats</th>

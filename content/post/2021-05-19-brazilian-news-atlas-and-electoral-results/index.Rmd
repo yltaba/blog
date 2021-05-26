@@ -20,7 +20,7 @@ projects: []
 
 ## Introduction
 
-This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from *Atlas da Notícia*, a survey of local journalistic vehicles, with data from local Brazilian elections, and generate insights about local electoral politics.
+This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from *Atlas da Notícia*, a survey of local journalistic vehicles, with data from local Brazilian elections.
 
 *Atlas da Notícia* is an initiative from [Projor](https://www.projor.org.br/) (Institute for Journalism Development) with [Volt Data Lab](https://voltdata.info/).
 
@@ -154,10 +154,11 @@ atlas_enpv <- read_csv("atlas_enpv.csv")
 ```
 
 
-The resulting data frame is:
+The resulting dataframe is:
 
 ```{r}
-head(atlas_enpv) |> kable()
+head(atlas_enpv) |> 
+  kable(caption = "Dataframe head of joined info from Atlas da Notícia and electoral results")
 ```
 
 - Checking data types and missing values with `visdat`
