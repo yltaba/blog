@@ -29,7 +29,7 @@ item:
   description: "A carreer track with 22 courses focused on data cleaning, wrangling, visualization and statistical tools as regression analysis, supervised and unsupervised learning."
   organization: DataCamp
   organization_url: https://www.datacamp.com
-  title: 'Data Scientist with R Track'
+  title: 'Data Scientist with R'
   url: ""
 
 design:

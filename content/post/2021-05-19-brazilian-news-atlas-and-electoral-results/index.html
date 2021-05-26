@@ -1,0 +1,373 @@
+---
+title: Brazilian News Atlas and Local Elections
+author: Yuri Lucatelli Taba
+date: '2021-05-19'
+slug: brazilian-news-atlas-and-local-elections
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2021-05-19T11:46:44-03:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from <em>Atlas da Notícia</em>, a survey of local journalistic vehicles, with data from local Brazilian elections, and generate insights about local electoral politics.</p>
+<p><em>Atlas da Notícia</em> is an initiative from <a href="https://www.projor.org.br/">Projor</a> (Institute for Journalism Development) with <a href="https://voltdata.info/">Volt Data Lab</a>.</p>
+<p>We are interested in evaluate electoral outcomes from the so-called <em>news deserts</em>, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of total population.</p>
+<p>The theorethical implications in electoral politics from these <em>news deserts</em> are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process.</p>
+<pre class="r"><code>library(tidyverse)
+library(janitor)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(electionsBR)
+library(cepespR)
+library(newsatlasbr)</code></pre>
+</div>
+<div id="cleaning-calculating-and-getting-data-togheter" class="section level2">
+<h2>Cleaning, Calculating and Getting Data Togheter</h2>
+<ul>
+<li>Import data from <em>Atlas da Notícia</em> using its API <code>newsatlasbr</code>. Download Brazilian electoral results data using <code>electionsBR</code> package.</li>
+</ul>
+<pre class="r"><code>### Downloading data from Atlas da Notícia
+
+# accessing API
+atlas_signin(email = Sys.getenv(&quot;my_email&quot;), 
+             password = Sys.getenv(&quot;my_password&quot;)) 
+
+atlas &lt;- 
+  get_municipalities() |&gt; 
+  clean_names()
+
+### Downloading data from TSE
+
+resultados_2020 &lt;- 
+  electionsBR::vote_mun_zone_local(2020) |&gt; 
+  clean_names()</code></pre>
+<ul>
+<li>Clean column names to <em>snake_case</em> using <code>janitor::clean_names</code> (Brazilian Electoral Court uses a very unusual, and ugly, pattern for its variables, all of them in upper cases and separated by white spaces). Clean municipalies names with <code>stringr::str_to_title</code>.</li>
+</ul>
+<pre class="r"><code>### Electoral results are divided by &quot;zona eleitoral&quot;, we need to aggregate it. 
+## One line must represent the total number of votes received by each candidate.
+## Cleaning municipalities names - they are originaly in upper case.
+
+nome_municipio &lt;- 
+  resultados_2020 |&gt; 
+  pull(nome_municipio) |&gt; 
+  str_to_title()
+
+resultados_cand_2020 &lt;- resultados_2020 |&gt;
+  select(-nome_municipio) |&gt;
+  cbind(nome_municipio) |&gt; 
+  group_by(ano_eleicao, sq_candidato, sigla_uf, 
+           codigo_municipio, nome_municipio, numero_cand,
+           nome_candidato, sigla_partido, composicao_legenda, 
+           desc_sit_cand_tot) |&gt; 
+  summarize(total_votos = sum(total_votos), 
+            .groups = &quot;drop&quot;)</code></pre>
+<ul>
+<li>Calculate the effective number of parties, that consists in: <span class="math inline">\(ENPV = \frac{1}{\sum_i^{n} p_i^2}\)</span>, where <span class="math inline">\(p\)</span> is the proportion of votes won by each party in a given election.</li>
+</ul>
+<pre class="r"><code>### Calculating total number of votes by party
+
+resultados_partido_2020 &lt;- resultados_cand_2020 |&gt;
+  group_by(ano_eleicao, sigla_uf, codigo_municipio, 
+           nome_municipio, sigla_partido, composicao_legenda) |&gt;
+  summarize(total_votos_partido = sum(total_votos), 
+            .groups = &quot;drop&quot;)
+
+
+### Calculating ENPV
+
+fragmentacao &lt;- resultados_partido_2020 |&gt; 
+  group_by(ano_eleicao, sigla_uf, codigo_municipio, nome_municipio) |&gt;
+  summarize(total_votos_municipio = sum(total_votos_partido),
+            prop_votos_partido = total_votos_partido / total_votos_municipio,
+            prop_votos_partido_2 = prop_votos_partido * prop_votos_partido,
+            soma_prop_votos_partido_2 = sum(prop_votos_partido_2),
+            enpv = 1 / soma_prop_votos_partido_2, .groups = &quot;drop&quot;) |&gt; 
+  distinct(ano_eleicao, sigla_uf, codigo_municipio, 
+           nome_municipio, total_votos_municipio, enpv)</code></pre>
+<ul>
+<li>Joining data from Atlas with electoral results. To do this, we need a table linking both IBGE and TSE’s municipality code. <code>cepespR</code> package helps us here.</li>
+</ul>
+<pre class="r"><code>### Join Atlas and ENPV
+
+## using cepespR package to get correspondent municipal code for IBGE and TSE
+
+colunas &lt;- list(&quot;COD_MUN_TSE&quot;, &quot;COD_MUN_IBGE&quot;)
+
+cod_tse_ibge &lt;- cepespR::get_elections(year = 2016, 
+                                       position = &quot;Vereador&quot;, 
+                                       columns_list = colunas) |&gt; 
+  distinct(COD_MUN_TSE, COD_MUN_IBGE)
+
+atlas_enpv &lt;- fragmentacao |&gt;  
+  left_join(cod_tse_ibge, by = c(&quot;codigo_municipio&quot; = &quot;COD_MUN_TSE&quot;)) |&gt; 
+  mutate(codmun = as.character(COD_MUN_IBGE)) |&gt;  
+  select(-COD_MUN_IBGE) |&gt; 
+  left_join(atlas |&gt; 
+              select(codmun, regiao, qtd_veiculos, 
+                     veiculos_por_100k_hab, 
+                             populacao_2020 = populacao, 
+                     idhm, idhm_r, idhm_e), by = &quot;codmun&quot;)
+
+rm(atlas, cod_tse_ibge, colunas, fragmentacao, 
+   resultados_2020, resultados_cand_2020, 
+   resultados_partido_2020, nome_municipio)</code></pre>
+<p>The resulting data frame is:</p>
+<pre class="r"><code>head(atlas_enpv) |&gt; kable()</code></pre>
+<table>
+<colgroup>
+<col width="6%" />
+<col width="5%" />
+<col width="9%" />
+<col width="12%" />
+<col width="12%" />
+<col width="5%" />
+<col width="4%" />
+<col width="4%" />
+<col width="7%" />
+<col width="12%" />
+<col width="8%" />
+<col width="3%" />
+<col width="4%" />
+<col width="4%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">ano_eleicao</th>
+<th align="left">sigla_uf</th>
+<th align="left">codigo_municipio</th>
+<th align="left">nome_municipio</th>
+<th align="right">total_votos_municipio</th>
+<th align="right">enpv</th>
+<th align="right">codmun</th>
+<th align="left">regiao</th>
+<th align="right">qtd_veiculos</th>
+<th align="right">veiculos_por_100k_hab</th>
+<th align="right">populacao_2020</th>
+<th align="right">idhm</th>
+<th align="right">idhm_r</th>
+<th align="right">idhm_e</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01007</td>
+<td align="left">Bujari</td>
+<td align="right">13777</td>
+<td align="right">8.345027</td>
+<td align="right">1200138</td>
+<td align="left">Norte</td>
+<td align="right">0</td>
+<td align="right">0.0000</td>
+<td align="right">10420</td>
+<td align="right">0.589</td>
+<td align="right">0.603</td>
+<td align="right">0.439</td>
+</tr>
+<tr class="even">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01015</td>
+<td align="left">Capixaba</td>
+<td align="right">11515</td>
+<td align="right">9.046891</td>
+<td align="right">1200179</td>
+<td align="left">Norte</td>
+<td align="right">0</td>
+<td align="right">0.0000</td>
+<td align="right">12008</td>
+<td align="right">0.575</td>
+<td align="right">0.601</td>
+<td align="right">0.398</td>
+</tr>
+<tr class="odd">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01023</td>
+<td align="left">Porto Acre</td>
+<td align="right">18549</td>
+<td align="right">6.785990</td>
+<td align="right">1200807</td>
+<td align="left">Norte</td>
+<td align="right">0</td>
+<td align="right">0.0000</td>
+<td align="right">18824</td>
+<td align="right">0.576</td>
+<td align="right">0.593</td>
+<td align="right">0.418</td>
+</tr>
+<tr class="even">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01031</td>
+<td align="left">Santa Rosa Do Purus</td>
+<td align="right">5494</td>
+<td align="right">7.615750</td>
+<td align="right">1200435</td>
+<td align="left">Norte</td>
+<td align="right">0</td>
+<td align="right">0.0000</td>
+<td align="right">6717</td>
+<td align="right">0.517</td>
+<td align="right">0.519</td>
+<td align="right">0.340</td>
+</tr>
+<tr class="odd">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01040</td>
+<td align="left">Marechal Thaumaturgo</td>
+<td align="right">16419</td>
+<td align="right">6.834999</td>
+<td align="right">1200351</td>
+<td align="left">Norte</td>
+<td align="right">0</td>
+<td align="right">0.0000</td>
+<td align="right">19299</td>
+<td align="right">0.501</td>
+<td align="right">0.479</td>
+<td align="right">0.361</td>
+</tr>
+<tr class="even">
+<td align="right">2020</td>
+<td align="left">AC</td>
+<td align="left">01058</td>
+<td align="left">Brasiléia</td>
+<td align="right">25052</td>
+<td align="right">6.318941</td>
+<td align="right">1200104</td>
+<td align="left">Norte</td>
+<td align="right">3</td>
+<td align="right">11.2351</td>
+<td align="right">26702</td>
+<td align="right">0.614</td>
+<td align="right">0.619</td>
+<td align="right">0.485</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Checking data types and missing values with <code>visdat</code></li>
+</ul>
+<pre class="r"><code>atlas_enpv |&gt;
+  visdat::vis_dat()</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>It seems we only have missing values for Human Development Index’s measures. We will come back to it later.</p>
+</div>
+<div id="analysis" class="section level2">
+<h2>Analysis</h2>
+<p>As said before, we will focus on <em>news deserts</em> - places without local news organization at all. This is an important issue because almost 60% of all municipalities are included in this category.</p>
+<pre class="r"><code>atlas_enpv |&gt; 
+  mutate(qtd_veiculos = as.factor(qtd_veiculos)) |&gt;
+  count(qtd_veiculos = fct_lump(qtd_veiculos, 9)) |&gt;
+  ggplot(aes(qtd_veiculos, (n/sum(n)*100)))+
+  geom_col()+
+  labs(title = &quot;% of municipalities by number of local news vehicles&quot;,
+       y = &quot;% of Brazilian municipalities&quot;,
+       x = &quot;Number of local news vehicles&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>Let’s filter out data to only deal with <em>news deserts</em>.</p>
+<pre class="r"><code>desertos &lt;- atlas_enpv |&gt;
+  filter(qtd_veiculos == 0)
+
+n_desertos &lt;- nrow(desertos)</code></pre>
+<p>We have now 3249 observations in our dataset.</p>
+<div id="including-district-magnitude---to-be-completed" class="section level5">
+<h5>including district magnitude - to be completed</h5>
+<pre class="r"><code>### Getting number of seats in each municipality
+
+magnitude_2020 &lt;- electionsBR::seats_local(2020)
+
+### Joining number of seats in each municipality
+
+magnitude_2020 &lt;- magnitude_2020 |&gt;  
+  clean_names() |&gt; 
+  filter(descricao_cargo == &quot;Vereador&quot;) |&gt; 
+  select(codigo_municipio = sigla_ue, magnitude = qtde_vagas)
+
+desertos &lt;- desertos |&gt;  
+  left_join(magnitude_2020, by = &quot;codigo_municipio&quot;)</code></pre>
+<pre class="r"><code>desertos |&gt;
+  count(magnitude) |&gt;
+  mutate(prop = round(n/sum(n) * 100, 2),
+         cumsum = cumsum(prop)) |&gt;
+  arrange(desc(prop)) |&gt;
+  rename(&quot;# of Seats&quot; = magnitude, 
+         &quot;# of Municipalities&quot; = n, 
+         &quot;% of Municipalities&quot; = prop,
+         &quot;CumSum of %&quot; = cumsum) |&gt;
+  kable(caption = &quot;Cumulated sum of % municipalities by district magnitude&quot;)</code></pre>
+<table>
+<caption><span id="tab:unnamed-chunk-13">Table 1: </span>Cumulated sum of % municipalities by district magnitude</caption>
+<thead>
+<tr class="header">
+<th align="right"># of Seats</th>
+<th align="right"># of Municipalities</th>
+<th align="right">% of Municipalities</th>
+<th align="right">CumSum of %</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">9</td>
+<td align="right">2727</td>
+<td align="right">83.93</td>
+<td align="right">83.96</td>
+</tr>
+<tr class="even">
+<td align="right">11</td>
+<td align="right">413</td>
+<td align="right">12.71</td>
+<td align="right">96.67</td>
+</tr>
+<tr class="odd">
+<td align="right">13</td>
+<td align="right">86</td>
+<td align="right">2.65</td>
+<td align="right">99.32</td>
+</tr>
+<tr class="even">
+<td align="right">15</td>
+<td align="right">20</td>
+<td align="right">0.62</td>
+<td align="right">99.94</td>
+</tr>
+<tr class="odd">
+<td align="right">7</td>
+<td align="right">1</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+</tr>
+<tr class="even">
+<td align="right">17</td>
+<td align="right">1</td>
+<td align="right">0.03</td>
+<td align="right">99.97</td>
+</tr>
+<tr class="odd">
+<td align="right">19</td>
+<td align="right">1</td>
+<td align="right">0.03</td>
+<td align="right">100.00</td>
+</tr>
+</tbody>
+</table>
+<p>More than 96% of news deserts have 9 or 11 seats, they are the smallest cities, because district magnitude is calculated as a function of population size.</p>
+</div>
+</div>
