@@ -34,7 +34,7 @@ library(knitr)
 theme_set(theme_tufte())
 ```
 
-#### Load the weekly Data
+#### Loading data
 
 
 
