@@ -21,7 +21,7 @@ projects: []
 
 *"The data this week comes from Mario Kart World Records and contains world records for the classic (if you’re a 90’s kid) racing game on the Nintendo 64."*
 
-See more at TidyTuesday's [GitHub](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-05-25/readme.md)
+See more at TidyTuesday's [GitHub](https://github.com/rfordatascience/tidytuesday/blob/master/data/2021/2021-05-25/readme.md).
 
 
 ```r

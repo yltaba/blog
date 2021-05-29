@@ -26,7 +26,7 @@ item:
 - certificate_url: https://www.datacamp.com/statement-of-accomplishment/track/d41e5217c952062b316a4af375e7959fdfbf895f
   date_end: "2021-05-17"
   date_start: "2021-04-26"
-  description: "A carreer track with 22 courses focused on data cleaning, wrangling, visualization and statistical tools as regression analysis, supervised and unsupervised learning."
+  description: "Track with 22 courses focused on data cleaning, wrangling, visualization and statistical tools as regression analysis, supervised and unsupervised learning."
   organization: DataCamp
   organization_url: https://www.datacamp.com
   title: 'Data Scientist with R'
