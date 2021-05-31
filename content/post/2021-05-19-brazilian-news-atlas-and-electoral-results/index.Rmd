@@ -20,7 +20,7 @@ projects: []
 
 ## Introduction
 
-This project consists in an Exploratory Data Analysis. The main objective here is to integrate data from *Atlas da Notícia*, a survey of local journalistic vehicles, with data from local Brazilian elections.
+This post consists in an Exploratory Data Analysis. The main objective here is to integrate data from *Atlas da Notícia*, a survey of local journalistic vehicles, with data from Brazilian local elections.
 
 *Atlas da Notícia* is an initiative from [Projor](https://www.projor.org.br/) (Institute for Journalism Development) with [Volt Data Lab](https://voltdata.info/).
 

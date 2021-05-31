@@ -33,10 +33,6 @@ social:
 - icon: graduation-cap
   icon_pack: fas
   link: https://scholar.google.com/citations?user=pYFjkOUAAAAJ&hl=pt-BR
-- icon: twitter
-  icon_pack: fab
-  label: Follow me on Twitter
-  link: https://twitter.com/yurilucatelli
 superuser: true
 title: Yuri Lucatelli Taba
 ---
