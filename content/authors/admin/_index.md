@@ -37,4 +37,6 @@ superuser: true
 title: Yuri Lucatelli Taba
 ---
 
-Political Science PhD student. I'm interested in data analysis and in generating valuable insights from it. Working mostly with R, but currently learning Python and SQL as well.
+I am a PhD student in Political Science interested in data analysis and in generating meaningful insights from it. I have experience as a Demand Planning Analyst and as Research Assistant. Working mostly with R, but currently learning SQL and Python.
+
+
