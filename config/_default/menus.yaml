@@ -7,10 +7,3 @@ main:
   - name: Posts
     url: '#posts'
     weight: 20
-  - name: Projects
-    url: '#projects'
-    weight: 10
-  - name: Publications
-    url: '#featured'
-    weight: 50
-

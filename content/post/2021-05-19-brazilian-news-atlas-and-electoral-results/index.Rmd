@@ -28,6 +28,8 @@ We are interested in evaluate electoral outcomes from the so-called *news desert
 
 The theorethical implications in electoral politics from these *news deserts* are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process. 
 
+## Calling packages
+
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(janitor)
