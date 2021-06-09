@@ -198,38 +198,5 @@ n_desertos <- nrow(desertos)
 
 We have now `r n_desertos` observations in our dataset.
 
-##### including district magnitude - to be completed
-
-```{r message=FALSE, warning=FALSE}
-### Getting number of seats in each municipality
-
-magnitude_2020 <- electionsBR::seats_local(2020)
-
-### Joining number of seats in each municipality
-
-magnitude_2020 <- magnitude_2020 |>  
-  clean_names() |> 
-  filter(descricao_cargo == "Vereador") |> 
-  select(codigo_municipio = sigla_ue, magnitude = qtde_vagas)
-
-desertos <- desertos |>  
-  left_join(magnitude_2020, by = "codigo_municipio")
-```
-
-```{r}
-desertos |>
-  count(magnitude) |>
-  mutate(prop = round(n/sum(n) * 100, 2),
-         cumsum = cumsum(prop)) |>
-  arrange(desc(prop)) |>
-  rename("# of Seats" = magnitude, 
-         "# of Municipalities" = n, 
-         "% of Municipalities" = prop,
-         "CumSum of %" = cumsum) |>
-  kable(caption = "Cumulated sum of % municipalities by district magnitude")
-```
-
-More than 96% of news deserts have 9 or 11 seats, they are the smallest cities, because district magnitude is calculated as a function of population size.
-
-
+*In the next step, to be completed, we will look deeper into those news deserts*
 
