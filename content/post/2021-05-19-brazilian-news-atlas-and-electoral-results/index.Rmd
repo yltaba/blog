@@ -20,13 +20,11 @@ projects: []
 
 ## Introduction
 
-This post consists in an Exploratory Data Analysis. The main objective here is to integrate data from *Atlas da Notícia*, a survey of local journalistic vehicles, with data from Brazilian local elections.
+In this post, we are interested in evaluate electoral outcomes from the so-called *news deserts*, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of total population.
 
-*Atlas da Notícia* is an initiative from [Projor](https://www.projor.org.br/) (Institute for Journalism Development) with [Volt Data Lab](https://voltdata.info/).
+We use data from *Atlas da Notícia*, a [Projor](https://www.projor.org.br/) (Institute for Journalism Development) initiative with [Volt Data Lab](https://voltdata.info/).
 
-We are interested in evaluate electoral outcomes from the so-called *news deserts*, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of total population.
-
-The theorethical implications in electoral politics from these *news deserts* are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process. 
+The theorethical implications for electoral politics from these *news deserts* are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process. 
 
 ## Calling packages
 
@@ -170,11 +168,11 @@ atlas_enpv |>
   visdat::vis_dat()
 ```
 
-It seems we only have missing values for Human Development Index's measures. We will come back to it later.
+It seems we only have missing values for Human Development Index's measures.
 
 ## Analysis
 
-As said before, we will focus on *news deserts* - places without local news organization at all. This is an important issue because almost 60% of all municipalities are included in this category.
+As said, we will focus on *news deserts* - places without local news organization at all. This is an important issue because almost 60% of all municipalities are included in this category.
 
 ```{r}
 atlas_enpv |> 
@@ -186,7 +184,6 @@ atlas_enpv |>
        y = "% of Brazilian municipalities",
        x = "Number of local news vehicles")
 ```
-
 Let's filter out data to only deal with *news deserts*.
 
 ```{r}
@@ -198,5 +195,44 @@ n_desertos <- nrow(desertos)
 
 We have now `r n_desertos` observations in our dataset.
 
-*In the next step, to be completed, we will look deeper into those news deserts*
+### Including district magnitude
+
+An important feature of any election is the number of seats under dispute. This determines the number of "victories" parties can have.
+In Brazil, municipalities have a mininum of 9 seats in its local parliaments and a maximum of 55. This number is a function of municipality's population size.
+We can use the `seats_local()` function from `electionsBR` package to get this information.
+
+```{r message=FALSE, warning=FALSE}
+### Getting number of seats in each municipality
+
+magnitude_2020 <- electionsBR::seats_local(2020)
+
+### Joining number of seats in each municipality
+
+magnitude_2020 <- magnitude_2020 |>  
+  clean_names() |> 
+  filter(descricao_cargo == "Vereador") |> 
+  select(codigo_municipio = sigla_ue, magnitude = qtde_vagas)
+
+desertos <- desertos |>  
+  left_join(magnitude_2020, by = "codigo_municipio")
+```
+
+What is the district magnitude of *news deserts*?
+
+```{r}
+desertos |>
+  count(magnitude) |>
+  mutate(prop = round(n/sum(n) * 100, 2),
+         cumsum = cumsum(prop)) |>
+  arrange(desc(prop)) |>
+  rename("# of Seats" = magnitude, 
+         "# of Municipalities" = n, 
+         "% of Municipalities" = prop,
+         "CumSum of %" = cumsum) |>
+  kable(caption = "Cumulated sum of % municipalities by district magnitude")
+```
+By calculating the cumulative sum of the percentage of municipalities by each district magnitude size, we see that more than 83% of all Brazilian cities that have no local news vehicle elect only 9 city councilors. 
+
+
+
 
