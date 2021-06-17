@@ -4,7 +4,7 @@ education:
   courses:
   - course: PhD in Political Science
     institution: Universidade de São Paulo
-    year: 2021 -
+    year: 2021 - Present
   - course: MA in Political Science
     institution: Universidade de São Paulo
     year: 2019 - 2021
@@ -15,8 +15,8 @@ email: "yuriltaba@gmail.com"
 highlight_name: false
 interests:
 - Data Science
-- Political Institutions
 - Causal Inference
+- Political Institutions
 organizations:
 - name: Universidade de São Paulo
   url: http://dcp.fflch.usp.br/
@@ -37,6 +37,6 @@ superuser: true
 title: Yuri Lucatelli Taba
 ---
 
-I am a PhD student in Political Science interested in data analysis and in generating meaningful insights from it. I have experience as a Demand Planning Analyst and as Research Assistant. Working mostly with R, but currently learning SQL and Python.
+Political Science PhD student interested in data analysis and in generating meaningful insights from it. I have experience in business as a Demand Planning Analyst and in academia as a Research Assistant. Working mostly with R, but currently learning SQL and Python.
 
 

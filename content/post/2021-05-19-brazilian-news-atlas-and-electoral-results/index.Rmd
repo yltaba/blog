@@ -1,14 +1,14 @@
 ---
 title: Brazilian News Atlas and Local Elections
 author: Yuri Lucatelli Taba
-date: '2021-05-19'
+date: '2021-06-16'
 slug: brazilian-news-atlas-and-local-elections
 categories: []
 tags: []
 subtitle: ''
 summary: ''
 authors: []
-lastmod: '2021-05-19T11:46:44-03:00'
+lastmod: '2021-06-16T11:46:44-03:00'
 featured: no
 image:
   caption: ''
@@ -20,11 +20,11 @@ projects: []
 
 ## Introduction
 
-In this post, we are interested in evaluate electoral outcomes from the so-called *news deserts*, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of total population.
+In this post, we are interested in evaluate electoral outcomes from the so-called *news deserts*, municipalities without journalistic coverage by any specific vehicle based in the city. They are 58.4% of Brazilian cities, and are the home for 18% of the total population.
 
 We use data from *Atlas da Notícia*, a [Projor](https://www.projor.org.br/) (Institute for Journalism Development) initiative with [Volt Data Lab](https://voltdata.info/).
 
-The theorethical implications for electoral politics from these *news deserts* are plenty, we could hypothesize about electoral campaigns and develop an argument to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process. 
+The theorethical implications for electoral politics coming from these *news deserts* are plenty, we could hypothesize about electoral campaigns to evaluate the effectiveness of campaigns in a context where parties and candidates control all the content produced about them (except negative campaigns conducted by its adversaries, of course). But, our goal is more analitical than theoretical (that is, we are focusing in Exploratory Data Analysis, not in Political Science), so we will focus on an outcome easily calculated and that do not depend upon major theorical interpretations: the Effective Number of Parties in Votes (ENPV), which calculates the degree of party system fragmentation from any electoral process. 
 
 ## Calling packages
 
@@ -34,6 +34,7 @@ library(janitor)
 library(stringr)
 library(knitr)
 library(ggthemes)
+library(ggpubr)
 library(electionsBR)
 library(cepespR)
 library(newsatlasbr)
@@ -182,7 +183,9 @@ atlas_enpv |>
   geom_col()+
   labs(title = "% of municipalities by number of local news vehicles",
        y = "% of Brazilian municipalities",
-       x = "Number of local news vehicles")
+       x = "Number of local news vehicles") + 
+  theme(plot.title.position = "plot",
+        plot.title = element_text(face = "bold"))
 ```
 Let's filter out data to only deal with *news deserts*.
 
@@ -231,8 +234,77 @@ desertos |>
          "CumSum of %" = cumsum) |>
   kable(caption = "Cumulated sum of % municipalities by district magnitude")
 ```
-By calculating the cumulative sum of the percentage of municipalities by each district magnitude size, we see that more than 83% of all Brazilian cities that have no local news vehicle elect only 9 city councilors. 
+By calculating the cumulative sum of the percentage of municipalities by each district magnitude size, we see that more than 83% of all Brazilian cities that have no local news vehicle elect only 9 city councilors. We will focus on those 2727 municipalities.
 
 
+```{r}
+desertos <- desertos |> 
+  filter(magnitude == 9)
 
+ggplot(desertos, aes(x = populacao_2020, y = "")) +
+  geom_boxplot(width = 0.25) +
+  geom_jitter(width = 0.05, alpha = 0.1, size = 1, color = "blue") +
+  geom_vline(xintercept = 15000, lty = 2) +
+  annotate("text", label= "Constitutional cut off for 9 and 11 seats", x = 22100, y = 1.5, size=3) +
+  labs(title = "Distribution of municipalities by population size",
+       subtitle = "Municipalities without local news vehicles and district magnitude of 9 seats",
+       y = NULL,
+       x = "Population size") +
+  scale_x_continuous(breaks = seq(0, 50000, 5000)) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(face = "bold"))
+```
+The dashed line on 15,000 inhabitants marks the legal compliance with the rule establishing the number of seats. A 2009's Constitutional Amendment ruled that municipalities with population size between 15,000 and 30,000 should have 11 seats in its local parliament. So, we need to consider that all municipalities above that threshold are not respecting the Constitution,, we will drop those non-compliers to avoid bias.
 
+```{r}
+desertos_9c <- desertos |> 
+  filter(populacao_2020 <= 15000)
+```
+
+### Effective number of parties in votes in Brazilian news deserts
+
+Now we can evaluate the outcome of interest: the effective number of parties in news deserts with district magnitude of 9 seats.
+
+```{r message=FALSE, warning=FALSE}
+desertos_9c |> 
+  ggplot(aes(enpv)) +
+  geom_histogram(alpha = 0.3) +
+  geom_vline(xintercept = mean(desertos_9c$enpv), lty = 2) +
+  annotate("text", label = "Mean", x = 4.2, y = 330) +
+  geom_vline(xintercept = median(desertos_9c$enpv)) +
+  annotate("text", label = "Median", x = 5.2, y = 315) +
+  labs(title = "Distribution of effective number of parties in votes",
+       subtitle = "Municipalities with less than 15k inhabitants and 9 seats in its local parliament",
+       x = "Effective number of parties in votes",
+       y = "Number of municipalities") +
+  theme(plot.title.position = "plot",
+        plot.title = element_text(face = "bold"))
+```
+
+The distribution shows that most municipalities have between 3 and 6 effective number of parties, with a mean of 4.62 and median of 4.69. It represents that despite the high party-sytem fragmentation in the Chamber of Deputies, locally the scenario is less sprayed.
+
+Finally, we can naively assess the association between population size and the effective number of parties in a bivariate regression model. 
+
+```{r message=FALSE, warning=FALSE}
+desertos_9c |> 
+  mutate(pop_1000 = populacao_2020 / 1000) |> 
+  ggplot(aes(pop_1000, enpv)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(method = "lm", se = FALSE) +
+  stat_regline_equation() +
+  stat_cor(label.y = 10, aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"))) +
+  labs(title = "Bivariate linear model",
+       subtitle = "Population size on ENPV",
+       x = "Population size (by 1000)",
+       y = "Effective number of parties") +
+  theme(plot.title.position = "plot",
+        plot.title = element_text(face = "bold"))
+```
+
+The plot above shows that as population size increases, the effective number of parties in votes increases as well. This association here is not causally identified as we are not considering sources of omitted variable bias. But we can say that the increase of the population size by 1,000 is naively associated with a increase of 0.11 in the effective number of parties index. However, the R² measure indicates that only 6% of the variation in ENPV is explained by population size.
+
+## Final thoughts
+
+In this first effort to analyze data from *Atlas da Notícia* we linked it with electoral data and tried to have a closer look at *news deserts*. As said before, this was just an Exploratory Data Analysis and further investigation must be done to evaluate the political consequences of these deserts. 
